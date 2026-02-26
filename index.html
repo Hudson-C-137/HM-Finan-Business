@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gestão Salão Master Pro - Mobile Optimized</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ui-bg: #f8f9fa;
+            --ui-card: #ffffff;
+            --ui-text: #212529;
+            --ui-dim: #6c757d;
+            --ui-accent: #d63384;
+            --ui-green: #198754;
+            --ui-red: #dc3545;
+            --sidebar-width: 280px;
+        }
+
+        /* Reset e Acessibilidade Mobile */
+        * { box-sizing: border-box; transition: all 0.2s ease; -webkit-tap-highlight-color: transparent; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--ui-bg); 
+            color: var(--ui-text); 
+            margin: 0; 
+            padding: 0; 
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+        
+        .container { width: 100%; max-width: 1200px; margin: auto; padding: 20px; padding-top: 70px; }
+
+        /* --- SIDEBAR OTIMIZADA --- */
+        #sidebar {
+            position: fixed; left: -100%; top: 0;
+            width: 85%; max-width: var(--sidebar-width); height: 100%;
+            background: #fff; box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+            z-index: 3000; padding: 30px 20px; overflow-y: auto;
+        }
+        #sidebar.open { left: 0; }
+        .overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.4); z-index: 2500; display: none; 
+        }
+
+        .menu-btn {
+            position: fixed; top: 15px; left: 15px; background: white; border: none; 
+            cursor: pointer; z-index: 1001; padding: 10px 15px; border-radius: 12px; 
+            font-size: 1.4rem; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        /* --- MODAIS ESTILO BOTTOM-SHEET PARA MOBILE --- */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 4000; display: none; padding: 20px; overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        @media (max-width: 768px) {
+            .modal { top: 5%; border-radius: 25px 25px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
+            .summary { grid-template-columns: 1fr !important; gap: 10px !important; }
+            .grid { grid-template-columns: 1fr !important; }
+            .agenda-split { grid-template-columns: 1fr !important; gap: 20px !important; }
+        }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; position: sticky; top: 0; background: white; z-index: 10; padding: 10px 0; }
+        
+        /* Calendário Compacto */
+        .calendar-grid-custom { display: grid; grid-template-columns: 30px repeat(7, 1fr); gap: 4px; }
+        .cal-day { padding: 12px 5px; border: 1px solid #f0f0f0; text-align: center; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 500; }
+        .cal-day.active { background: var(--ui-accent); color: white; border-color: var(--ui-accent); }
+        .btn-week-sel { background: #f8f9fa; border: none; font-size: 9px; color: var(--ui-dim); }
+
+        /* --- UI PRINCIPAL --- */
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .summary-card { background: var(--ui-card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f1f1f1; }
+        .summary-card span { font-size: 10px; color: var(--ui-dim); font-weight: 700; }
+        .summary-card div { font-size: 22px; font-weight: 700; margin-top: 5px; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .card { background: var(--ui-card); border-radius: 24px; padding: 20px; border: 1px solid rgba(0,0,0,0.05); }
+        
+        /* Inputs maiores para dedos */
+        input { font-size: 16px !important; padding: 14px !important; border-radius: 12px !important; border: 1px solid #eee !important; width: 100%; }
+        .add-btn { min-height: 48px; width: 100%; border-radius: 14px; font-size: 15px; cursor: pointer; border: none; }
+
+        .history { max-height: 200px; overflow-y: auto; margin: 10px 0; border-top: 1px solid #f8f9fa; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f8f9fa; font-size: 14px; }
+        
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 16px; text-align: center; }
+        .stat-card h2 { font-size: 18px; margin: 5px 0; }
+
+        .cat-total { font-weight: 700; color: var(--ui-accent); background: #fff0f6; padding: 5px 10px; border-radius: 10px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
+    <div id="sidebar">
+        <h2 style="font-size: 18px; margin-bottom: 20px;">Menu Principal</h2>
+        <button class="add-btn" style="margin-bottom:10px; background: var(--ui-accent); color: white;" onclick="openModal('agendaModal')">📅 AGENDA</button>
+        <button class="add-btn" style="margin-bottom:25px; background: #212529; color: white;" onclick="openModal('fechamentoModal')">📊 FECHAMENTO</button>
+        
+        <p style="font-size: 11px; color: var(--ui-dim); font-weight: bold; text-transform: uppercase; margin-bottom: 10px;">Configurações</p>
+        <button class="add-btn" style="margin-bottom:10px; background:#f1f3f5; color:#495057" onclick="addNewCategory()">+ Novo Serviço</button>
+        <button class="add-btn" style="margin-bottom:10px; background:#f1f3f5; color:#495057" onclick="exportBackup()">Exportar Dados</button>
+        <input type="file" id="importFile" style="display:none" onchange="importBackup(event)">
+        <button class="add-btn" style="margin-bottom:10px; background:#f1f3f5; color:#495057" onclick="document.getElementById('importFile').click()">Importar Dados</button>
+        <button class="add-btn" style="background:#fff5f5; color:var(--ui-red); border: 1px solid #ffc9c9;" onclick="factoryReset()">Limpar Tudo</button>
+    </div>
+
+    <div id="agendaModal" class="modal">
+        <div class="modal-header"><h2>Agenda</h2><button class="add-btn" style="width:auto; padding: 0 15px;" onclick="closeModal('agendaModal')">✕</button></div>
+        <div class="agenda-split" style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px;">
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                    <button class="add-btn" style="width:40px; background:#eee" onclick="changeMonth(-1)">◀</button>
+                    <h3 id="titleAgenda" style="font-size: 16px;"></h3>
+                    <button class="add-btn" style="width:40px; background:#eee" onclick="changeMonth(1)">▶</button>
+                </div>
+                <div id="gridAgenda" class="calendar-grid-custom"></div>
+            </div>
+            <div id="timeSlots" style="display: grid; grid-template-columns: 1fr; gap: 8px;"></div>
+        </div>
+    </div>
+
+    <div id="fechamentoModal" class="modal">
+        <div class="modal-header"><h2>Fechamento</h2><button class="add-btn" style="width:auto; padding: 0 15px;" onclick="closeModal('fechamentoModal')">✕</button></div>
+        <div class="agenda-split" style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+            <div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <button class="add-btn" style="width:40px; background:#eee" onclick="changeMonth(-1)">◀</button>
+                    <h3 id="titleFechamento" style="font-size: 15px;"></h3>
+                    <button class="add-btn" style="width:40px; background:#eee" onclick="changeMonth(1)">▶</button>
+                </div>
+                <div style="display: flex; gap: 8px; margin: 15px 0;">
+                    <button class="add-btn" style="background:#e9ecef; flex:1" onclick="selectFullMonth()">Mês Inteiro</button>
+                    <button class="add-btn" style="background:#fce8e6; color:var(--ui-red); flex:1" onclick="clearSelection()">Limpar</button>
+                </div>
+                <div id="gridFechamento" class="calendar-grid-custom"></div>
+            </div>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 20px;">
+                <h3 style="font-size: 16px; margin-bottom: 15px;">Resultados</h3>
+                <div class="stat-grid">
+                    <div class="stat-card"><small>ENTRADAS</small><h2 id="fecFaturamento" style="color:var(--ui-green)">R$ 0</h2></div>
+                    <div class="stat-card"><small>SAÍDAS</small><h2 id="fecDespesas" style="color:var(--ui-red)">R$ 0</h2></div>
+                    <div class="stat-card"><small>LUCRO</small><h2 id="fecLucro">R$ 0</h2></div>
+                    <div class="stat-card"><small>CLIENTES</small><h2 id="fecUnicos" style="color:var(--ui-accent)">0</h2></div>
+                </div>
+                <div id="fecDetailedList" style="margin-top: 20px; font-size: 12px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header style="text-align:center; margin-bottom:25px">
+            <input type="date" id="datePicker" class="add-btn" style="background:#fff; color:black; width:180px; margin: auto; display: block;" onchange="loadDate()">
+            <div id="dateNotice" style="margin-top: 10px; font-size: 12px; display: none; padding: 8px; border-radius: 8px;"></div>
+        </header>
+
+        <div class="summary">
+            <div class="summary-card"><span>Entradas</span><div id="displayTotalFaturado" style="color:var(--ui-green)">R$ 0,00</div></div>
+            <div class="summary-card"><span>Saídas</span><div id="displayDespesas" style="color:var(--ui-red)">R$ 0,00</div></div>
+            <div class="summary-card"><span>Saldo</span><div id="displayLucro">R$ 0,00</div></div>
+        </div>
+
+        <div class="grid" id="mainGrid">
+            <div id="categoriesContainer" style="display:contents"></div>
+            
+            <div class="card" style="border: 1px solid #ffc9c9; background: #fffafb;">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="color: var(--ui-red); margin:0; font-size: 18px;">💸 Saídas</h3>
+                    <span class="cat-total" id="totalDespesasCard" style="background:#fce8e6; color:var(--ui-red)">R$ 0,00</span>
+                </div>
+                <div class="history" id="despesaHistory"></div>
+                <div class="input-box" style="display:flex; flex-direction:column; gap:10px;">
+                    <input type="text" id="d-exp" placeholder="Descrição da saída">
+                    <input type="number" id="v-exp" placeholder="Valor R$" inputmode="decimal">
+                    <button class="add-btn" style="background: var(--ui-red); color:white;" onclick="addDespesa()">Salvar Saída</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TODA A LÓGICA DE PROGRAMAÇÃO FOI MANTIDA EXATAMENTE COMO NO ORIGINAL
+        const DEFAULT_CONFIG = [
+            { id: 'pe', name: 'Pé', icon: '🦶' },
+            { id: 'mao', name: 'Mão', icon: '💅' }
+        ];
+
+        let db = JSON.parse(localStorage.getItem('salao_master_v4')) || { config: DEFAULT_CONFIG, agenda: {}, daily: {} };
+        let currentCalDate = new Date();
+        let selectedDays = [];
+
+        function toggleMenu() { 
+            const sb = document.getElementById('sidebar');
+            const ov = document.getElementById('overlay');
+            const isOpen = sb.classList.contains('open');
+            if(isOpen) {
+                sb.classList.remove('open');
+                ov.style.display = 'none';
+            } else {
+                sb.classList.add('open');
+                ov.style.display = 'block';
+            }
+        }
+        
+        function openModal(id) { document.getElementById(id).style.display = 'block'; if(document.getElementById('sidebar').classList.contains('open')) toggleMenu(); renderCalendar(); }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; selectedDays = []; }
+
+        function loadDate() {
+            const selectedDate = document.getElementById('datePicker').value;
+            const today = new Date().toISOString().split('T')[0];
+            const notice = document.getElementById('dateNotice');
+            if(selectedDate !== today) {
+                notice.style.display = 'block';
+                notice.style.background = selectedDate < today ? '#fff3cd' : '#cce5ff';
+                notice.style.color = selectedDate < today ? '#856404' : '#004085';
+                notice.innerText = `Lançando para: ${selectedDate.split('-').reverse().join('/')}`;
+            } else { notice.style.display = 'none'; }
+            if(!db.daily[selectedDate]) db.daily[selectedDate] = { services: {}, expenses: [] };
+            renderFinance();
+        }
+
+        function renderFinance() {
+            const date = document.getElementById('datePicker').value;
+            const data = db.daily[date];
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = "";
+            let tf = 0;
+            db.config.forEach(cat => {
+                const list = data.services[cat.id] || [];
+                const t = list.reduce((a, b) => a + b.val, 0); tf += t;
+                container.innerHTML += `
+                <div class="card">
+                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <h3 style="margin:0; font-size:18px;">${cat.icon} ${cat.name} 
+                            <span style="font-size:12px; color:#ccc; margin-left:10px" onclick="editCategory('${cat.id}')">✎</span>
+                            <span style="font-size:12px; color:#ffcfcf; margin-left:5px" onclick="deleteCategory('${cat.id}')">✕</span>
+                        </h3>
+                        <span class="cat-total">R$ ${t.toFixed(2)}</span>
+                    </div>
+                    <div class="history">${list.map((e, idx) => `<div class="item"><span>${e.desc}</span><span>R$ ${e.val.toFixed(2)} <button onclick="removeItem('${cat.id}', ${idx})" style="border:none; color:#eee; background:none">✕</button></span></div>`).join('')}</div>
+                    <div style="display:flex; flex-direction:column; gap:10px; margin-top:10px;">
+                        <input type="text" id="d-${cat.id}" placeholder="Cliente">
+                        <input type="number" id="v-${cat.id}" placeholder="Valor" inputmode="decimal">
+                        <button class="add-btn" style="background:var(--ui-text); color:white" onclick="addService('${cat.id}')">Lançar</button>
+                    </div>
+                </div>`;
+            });
+            const te = data.expenses.reduce((a,b) => a+b.val, 0);
+            document.getElementById('despesaHistory').innerHTML = data.expenses.map((e, idx) => `<div class="item"><span>${e.desc}</span><span>R$ ${e.val.toFixed(2)} <button onclick="removeExp(${idx})" style="border:none; color:#eee; background:none">✕</button></span></div>`).join('');
+            document.getElementById('displayTotalFaturado').innerText = `R$ ${tf.toFixed(2)}`;
+            document.getElementById('displayDespesas').innerText = `R$ ${te.toFixed(2)}`;
+            document.getElementById('displayLucro').innerText = `R$ ${(tf-te).toFixed(2)}`;
+            document.getElementById('totalDespesasCard').innerText = `R$ ${te.toFixed(2)}`;
+        }
+
+        // --- Funções de Lógica ---
+        function addService(catId) {
+            const date = document.getElementById('datePicker').value;
+            const desc = document.getElementById(`d-${catId}`).value || "Cliente";
+            const val = parseFloat(document.getElementById(`v-${catId}`).value) || 0;
+            if(val > 0) {
+                if(!db.daily[date].services[catId]) db.daily[date].services[catId] = [];
+                db.daily[date].services[catId].push({ desc, val }); saveAndRender();
+                document.getElementById(`d-${catId}`).value = ""; document.getElementById(`v-${catId}`).value = "";
+            }
+        }
+
+        function addDespesa() {
+            const date = document.getElementById('datePicker').value;
+            const desc = document.getElementById('d-exp').value || "Gasto";
+            const val = parseFloat(document.getElementById('v-exp').value) || 0;
+            if(val > 0) { db.daily[date].expenses.push({ desc, val }); saveAndRender(); document.getElementById('d-exp').value = ""; document.getElementById('v-exp').value = ""; }
+        }
+
+        function saveDb() { localStorage.setItem('salao_master_v4', JSON.stringify(db)); }
+        function saveAndRender() { saveDb(); renderFinance(); }
+
+        // ADICIONADO: Pop-up de confirmação para remover serviço
+        function removeItem(cid, idx) { 
+            if(confirm("Deseja realmente apagar esta finança lançada?")) {
+                db.daily[document.getElementById('datePicker').value].services[cid].splice(idx, 1); 
+                saveAndRender(); 
+            }
+        }
+
+        // ADICIONADO: Pop-up de confirmação para remover despesa
+        function removeExp(idx) { 
+            if(confirm("Deseja realmente apagar esta saída lançada?")) {
+                db.daily[document.getElementById('datePicker').value].expenses.splice(idx, 1); 
+                saveAndRender(); 
+            }
+        }
+        
+        function addNewCategory() { const n = prompt("Nome do serviço:"); const e = prompt("Emoji:", "✨"); if(n) { db.config.push({id: 'c'+Date.now(), name:n, icon:e}); saveAndRender(); toggleMenu(); }}
+        function editCategory(id) { const c = db.config.find(x => x.id === id); const n = prompt("Novo nome:", c.name); const e = prompt("Novo emoji:", c.icon); if(n) { c.name = n; c.icon = e; saveAndRender(); }}
+        function deleteCategory(id) { if(confirm("Deseja excluir esta categoria e todos os seus lançamentos?")) { db.config = db.config.filter(x => x.id !== id); saveAndRender(); }}
+
+        // --- Lógica de Calendário e Fechamento ---
+        function changeMonth(s) { currentCalDate.setMonth(currentCalDate.getMonth() + s); renderCalendar(); }
+        
+        function renderCalendar() {
+            const isFec = document.getElementById('fechamentoModal').style.display === 'block';
+            const grid = document.getElementById(isFec ? 'gridFechamento' : 'gridAgenda');
+            const title = document.getElementById(isFec ? 'titleFechamento' : 'titleAgenda');
+            grid.innerHTML = `<div class="cal-day btn-week-sel"></div><div class="cal-day btn-week-sel">D</div><div class="cal-day btn-week-sel">S</div><div class="cal-day btn-week-sel">T</div><div class="cal-day btn-week-sel">Q</div><div class="cal-day btn-week-sel">Q</div><div class="cal-day btn-week-sel">S</div><div class="cal-day btn-week-sel">S</div>`;
+            const m = currentCalDate.getMonth(), y = currentCalDate.getFullYear();
+            title.innerText = new Intl.DateTimeFormat('pt-BR', {month:'long', year:'numeric'}).format(currentCalDate);
+            const first = new Date(y, m, 1).getDay(), last = new Date(y, m + 1, 0).getDate();
+            let dCount = 1;
+            for(let r=0; r<6; r++) {
+                if(dCount > last) break;
+                grid.innerHTML += `<button class="cal-day btn-week-sel" onclick="selectWeek(${r})">📅</button>`;
+                for(let c=0; c<7; c++) {
+                    if((r===0 && c<first) || dCount > last) grid.innerHTML += `<div></div>`;
+                    else {
+                        const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(dCount).padStart(2,'0')}`;
+                        grid.innerHTML += `<div class="cal-day ${selectedDays.includes(ds)?'active':''}" onclick="clickDay('${ds}', ${isFec})">${dCount}</div>`;
+                        dCount++;
+                    }
+                }
+            }
+        }
+
+        function clickDay(ds, isFec) {
+            if(isFec) {
+                if(selectedDays.includes(ds)) selectedDays = selectedDays.filter(d => d !== ds);
+                else selectedDays.push(ds);
+                calculateFechamento();
+            } else { selectedDays = [ds]; renderTimeSlots(ds); }
+            renderCalendar();
+        }
+
+        function renderTimeSlots(ds) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = `<h4 style="margin:0">Horários para ${ds.split('-').reverse().join('/')}</h4>`; 
+            if(!db.agenda[ds]) db.agenda[ds] = {};
+            for(let h=8; h<=20; h++) {
+                [":00", ":30"].forEach(min => {
+                    const t = h.toString().padStart(2,'0') + min;
+                    container.innerHTML += `
+                    <div style="display:flex; align-items:center; gap:10px; background:#fff; padding:5px; border-radius:10px; border:1px solid #f1f1f1">
+                        <span style="font-size:12px; font-weight:bold; min-width:45px">${t}</span>
+                        <input type="text" value="${db.agenda[ds][t]||''}" onchange="db.agenda['${ds}']['${t}']=this.value; saveDb()" placeholder="Livre..." style="padding:8px !important; font-size:14px !important">
+                    </div>`;
+                });
+            }
+        }
+
+        function calculateFechamento() {
+            let f = 0, e = 0; let clientesUnicos = new Set(); let detailedHtml = "";
+            selectedDays.sort().forEach(day => {
+                if(db.daily[day]) {
+                    Object.keys(db.daily[day].services).forEach(cid => {
+                        db.daily[day].services[cid].forEach(item => {
+                            f += item.val; clientesUnicos.add(item.desc.trim().toLowerCase());
+                            detailedHtml += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee"><span>${day.split('-').reverse().slice(0,2).join('/')} - ${item.desc}</span><span style="color:green">+${item.val}</span></div>`;
+                        });
+                    });
+                    db.daily[day].expenses.forEach(item => {
+                        e += item.val;
+                        detailedHtml += `<div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee"><span>${day.split('-').reverse().slice(0,2).join('/')} - ${item.desc}</span><span style="color:red">-${item.val}</span></div>`;
+                    });
+                }
+            });
+            document.getElementById('fecFaturamento').innerText = `R$ ${f.toFixed(2)}`;
+            document.getElementById('fecDespesas').innerText = `R$ ${e.toFixed(2)}`;
+            document.getElementById('fecLucro').innerText = `R$ ${(f-e).toFixed(2)}`;
+            document.getElementById('fecUnicos').innerText = clientesUnicos.size;
+            document.getElementById('fecDetailedList').innerHTML = detailedHtml;
+        }
+
+        function selectFullMonth() {
+            const last = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth()+1, 0).getDate();
+            for(let d=1; d<=last; d++) {
+                const ds = `${currentCalDate.getFullYear()}-${String(currentCalDate.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                if(!selectedDays.includes(ds)) selectedDays.push(ds);
+            }
+            renderCalendar(); calculateFechamento();
+        }
+
+        function selectWeek(row) {
+            const y = currentCalDate.getFullYear(), m = currentCalDate.getMonth();
+            const first = new Date(y, m, 1).getDay(); const lastMonth = new Date(y, m + 1, 0).getDate();
+            for(let i=0; i<7; i++) {
+                const d = (row * 7) + i - first + 1;
+                if(d > 0 && d <= lastMonth) {
+                    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    if(!selectedDays.includes(ds)) selectedDays.push(ds);
+                }
+            }
+            renderCalendar(); calculateFechamento();
+        }
+
+        function clearSelection() { selectedDays = []; renderCalendar(); calculateFechamento(); }
+
+        // --- Backup e Reset ---
+        function exportBackup() { 
+            const blob = new Blob([JSON.stringify(db)], {type: "application/json"}); 
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(blob); 
+            a.download = `backup_salao_${new Date().toISOString().split('T')[0]}.json`; 
+            a.click(); 
+        }
+
+        function importBackup(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedDb = JSON.parse(e.target.result);
+                    if (confirm("Isso substituirá todos os dados. Continuar?")) { db = importedDb; saveDb(); location.reload(); }
+                } catch (err) { alert("Erro no arquivo."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function factoryReset() {
+            if (confirm("⚠️ APAGAR TUDO PERMANENTEMENTE?")) {
+                const senha = prompt("Digite a senha de segurança:");
+                if (senha === "121991") { localStorage.removeItem('salao_master_v4'); location.reload(); }
+                else { alert("Senha incorreta."); }
+            }
+        }
+
+        window.onload = () => {
+            document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+            loadDate();
+        };
+    </script>
+</body>
+</html>
