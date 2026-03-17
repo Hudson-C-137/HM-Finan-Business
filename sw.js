@@ -1,18 +1,27 @@
 const CACHE_NAME = 'salao-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap'
-];
 
+// Arquivos para cache básico
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll([
+        './',
+        './index.html'
+      ]);
+    })
   );
 });
 
+// Ativação imediata
+self.addEventListener('activate', (e) => {
+  e.waitUntil(self.clients.claim());
+});
+
+// Responde as requisições
 self.addEventListener('fetch', (e) => {
   e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request))
+    caches.match(e.request).then((response) => {
+      return response || fetch(e.request);
+    })
   );
 });

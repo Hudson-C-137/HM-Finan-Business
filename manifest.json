@@ -2,7 +2,7 @@
   "name": "Gestão Salão Master Pro",
   "short_name": "Salão Master",
   "description": "Sistema de Gestão para Salões de Beleza",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#d63384",
@@ -11,7 +11,7 @@
       "src": "https://cdn-icons-png.flaticon.com/512/1049/1049110.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }
